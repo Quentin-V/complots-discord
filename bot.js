@@ -20,6 +20,12 @@ bot.on('message', message => {
 		game.players[0].message.delete();
 		game.players[0].message.channel.send(game.createPlayerEmbed(game.players[0])).then( newdm => game.players[0].message = newdm);
 	}
+	if(message.content.startsWith('gold')) {
+		game.players[0].gold = 9;
+		game.players[0].message.delete();
+		game.players[0].message.channel.send(game.createPlayerEmbed(game.players[0])).then( newdm => game.players[0].message = newdm);
+		message.delete();
+	}
 	if(message.content.startsWith('mention')) {
 		console.log(message.mentions.users.array());
 		console.log(message.mentions.users.array()[0]);
