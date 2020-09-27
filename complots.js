@@ -33,12 +33,12 @@ class ComplotsGame {
 		if(this.message === null) {
 			this.sendPrincipalMessage();
 		}else {
-			this.message.edit(`***C'est au tour de ${this.currentPlayer.user}***\nRéagir pour effectuer une action :\n\t🟡 Prendre le revenu\n\t🟨 Aide étrangère\n\t⚫ Assassiner quelqu'un pour 7 pièces d'or\n\t🟣 Action de la Duchesse\n\t🔴 Action de l'Assassin\n\t🔵 Action du Capitaine\n\t🟤 Action de l'ambassadeur\n\n*${this.currentPlayer.user} choisit une action*\n${this.lastAction}` + this.statusToString());
+			this.message.edit(`***C'est au tour de ${this.currentPlayer.user}***\nRéagir pour effectuer une action :\n\t🟡 Prendre le revenu\n\t🟨 Aide étrangère\n\t⚫ Assassiner quelqu'un pour 7 pièces d'or\n\t🟣 Action de la Duchesse\n\t🔴 Action de l'Assassin\n\t🔵 Action du Capitaine\n\t🟤 Action de l'ambassadeur\n\n${this.lastAction}` + this.statusToString());
 		}
 	}
 	// Method used to send the principal message of the game, if it is not created when a turn starts
 	sendPrincipalMessage() {
-		this.channel.send(`***C'est au tour de ${this.currentPlayer.user}***\nRéagir pour effectuer une action :\n\t🟡 Prendre le revenu\n\t🟨 Aide étrangère\n\t⚫ Assassiner quelqu'un pour 7 pièces d'or\n\t🟣 Action de la Duchesse\n\t🔴 Action de l'Assassin\n\t🔵 Action du Capitaine\n\t🟤 Action de l'ambassadeur\n\n*${this.currentPlayer.user} choisit une action*\n${this.lastAction}` + this.statusToString()).then(message => { // add 1 to the turn variable after displaying it
+		this.channel.send(`***C'est au tour de ${this.currentPlayer.user}***\nRéagir pour effectuer une action :\n\t🟡 Prendre le revenu\n\t🟨 Aide étrangère\n\t⚫ Assassiner quelqu'un pour 7 pièces d'or\n\t🟣 Action de la Duchesse\n\t🔴 Action de l'Assassin\n\t🔵 Action du Capitaine\n\t🟤 Action de l'ambassadeur\n\n${this.lastAction}` + this.statusToString()).then(message => { // add 1 to the turn variable after displaying it
 			this.message = message;
 			message.react('🟡');
 			message.react('🟨');
@@ -109,6 +109,7 @@ class ComplotsGame {
 	aideEtr() { // Method called when someone react to use 'Aide etrangere'
 		this.channel.send(`${this.currentPlayer.user} veut prendre l'aide étrangère (contré par la Duchesse), pour contrer cette action, réagissez avec l'emote :crossed_swords:️️ dans les 10 secondes`).then(msg => {
 			this.waitCounter(msg).then((countered, counter) => { // Wait to see if anyone counters the action
+				console.log("COUNTER : " + counter);
 				if(countered) { // If the action is countered
 					msg.edit(`*${this.currentPlayer.user} veut prendre l'aide étrangère (contré par la Duchesse)*\n\n**${counter} contre l'action de ${this.currentPlayer.user} (s'affirme Duchesse**\nPour contrer cette action, réagissez avec :crossed_swords:️️ dans les 10 secondes`).then(msg => {
 						this.waitCounter(msg).then((countered2, counter2) => { // Ask again to see if anyone counters the counter
@@ -133,7 +134,6 @@ class ComplotsGame {
 											}, 4000);
 										});
 									}else { // The counter hasn't a 'Duchesse' in his hand
-										// 👈👉
 										msg.edit(`*${this.currentPlayer.user} veut prendre l'aide étrangère (contré par la Duchesse)*\n*${counter} contre l'action de ${this.currentPlayer.user}*\n\n${counter2} pense que ${counter} n'est pas Duchesse\n\n**${counter} n'est pas Duchesse et doit révéler une de ses cartes**`);
 										this.revealCard(msg, counterPlayer).then(deadCard => {
 											msg.edit(`*${this.currentPlayer.user} veut prendre l'aide étrangère (contré par la Duchesse)*\n*${counter} contre l'action de ${this.currentPlayer.user}*\n\n${counter2} pense que ${counter} n'est pas Duchesse\n\n**${counterPlayer.user} n'était pas Duchesse et révèle un(e) _${deadCard}_**`);
@@ -270,9 +270,9 @@ class ComplotsGame {
 							});
 						}else { // The target hasn't countered and lose a card
 							msg.edit(`*${this.currentPlayer.user} veut effectuer l'action de l'assassin, iel doit mentioner la personne visée.*\n\n**${target.user} n'a pas contré l'assassinat et va donc perdre une carte.**`);
-							revealCard(target).then(deadCard => {
+							this.revealCard(target).then(deadCard => {
 								msg.delete();
-								this.lastAction = ``;
+								this.lastAction = `${this.currentPlayer.user} a tué ${target.user} en tant qu'Assassin, iel révèle un(e) ${deadCard}`;
 								this.playTurn();
 								return; // Safe return to avoid any unpurposed code execution
 							});
@@ -376,7 +376,7 @@ class ComplotsGame {
 					if(!this.currentPlayer.c1dead && this.currentPlayer.card1 === 'Ambassadeur' || !this.currentPlayer.c2dead && this.currentPlayer.card2 === 'Ambassadeur') { // Not lying
 						msg.edit(`*${this.currentPlayer.user} veut effectuer l'action de l'ambassadeur*\n${counter.user} contre l'action mais ${this.currentPlayer.user} ne mentait pas.\n${counter.user} choisit une carte à révéler.`);
 						this.revealCard(this.currentPlayer).then(deadCard => {
-							this.lastAction = `${counter.user} rate son contre sur ${this.currentPlayer.user} et perd un(e) ${deadCard}.`;
+							this.lastAction += `${counter.user} rate son contre sur ${this.currentPlayer.user} et perd un(e) ${deadCard}.`;
 						});
 					}else { // Lying
 						msg.edit(`*${this.currentPlayer.user} veut effectuer l'action de l'ambassadeur*\n${counter.user} contre l'action et ${this.currentPlayer.user} mentait.`);
@@ -388,55 +388,68 @@ class ComplotsGame {
 						});
 					}
 				}
-				let cardsToChose = [];
-				if(!this.currentPlayer.c1dead) cardsToChose.push(this.currentPlayer.card1);
-				if(!this.currentPlayer.c2dead) cardsToChose.push(this.currentPlayer.card2);
-				cardsToChose.push(this.deck.shift());
-				cardsToChose.push(this.deck.shift());
+				msg.edit(`${this.currentPlayer.user} est en train d'effectuer l'action de l'ambassadeur.`);
+				let cardsToChoose = [];
+				let nbKeep = 2;
+				if(!this.currentPlayer.c1dead) cardsToChoose.push(this.currentPlayer.card1);
+				else nbKeep = 1;
+				if(!this.currentPlayer.c2dead) cardsToChoose.push(this.currentPlayer.card2);
+				else nbKeep = 1;
+				cardsToChoose.push(this.deck.shift());
+				cardsToChoose.push(this.deck.shift());
 				let index = 0;
-				let cardsStr = `${index++} : `+ cardsToChose.join(`\n${index++} : `);
-				this.currentPlayer.user.send(`Tu pioches 2 cartes et doit en choisir ${nbKeep} à garder parmi les suivantes :\n${cardsStr}`).then(msg => {
+				let cardsStr = ``;
+				cardsToChoose.forEach(c => {
+					cardsStr += `${index} : ${cardsToChoose[index++]}\n`;
+				});
+
+				this.currentPlayer.user.send(`Tu pioches 2 cartes et doit en choisir ${nbKeep} à garder parmi les suivantes :\n${cardsStr}`).then(dm => {
 					let filter = m => {
 						m.content.split(' ').forEach(e => {
-							if(isNaN(parseInt(e, 10)) || parseInt(e, 10) >= index) return false;
+							if(isNaN(parseInt(e, 10)) || parseInt(e, 10) >= index || m.author.bot) return false;
 						})
 						return true;
 					}
-					let collector = msg.channel.createMessageCollector(filter, {time: 20000});
+					let collector = dm.channel.createMessageCollector(filter, {time: 20000});
 					collector.on('collect', c => {
-						let chosen = c.split(' ');
+						let chosen = c.content.split(' ');
 						let chosenIndex = [];
 						chosen.forEach(i => {
 							chosenIndex.push(parseInt(i, 10));
 						});
-						this.replaceCards(this.currentPlayer, chosenIndex, cardsToChose);
-						this.deck = this.deck.concat(cardsToChose);
-						this.deck = this.deck.shuffle(deck);
+						this.replaceCards(this.currentPlayer, chosenIndex, cardsToChoose);
+						this.deck = this.deck.concat(cardsToChoose);
+						this.deck = Deck.shuffle(this.deck);
 						collector.stop('chosen');
 					});
 
 					collector.on('end', (c, r) => {
 						if(r !== 'chosen') {
-							cardsToChose.shift()
+							cardsToChoose.shift()
 							if(!this.currentPlayer.c1dead && !this.currentPlayer.c2dead)
-								cardsToChose.shift()
-							this.deck = this.deck.concat(cardsToChose);
-							this.deck = this.deck.shuffle(deck);
+								cardsToChoose.shift()
+							this.deck = this.deck.concat(cardsToChoose);
+							this.deck = Deck.shuffle(this.deck);
 						}
+						this.lastAction += `${this.currentPlayer.user} a fait l'action de l'ambassadeur.**`;
+						this.playTurn();
+						dm.delete();
+						msg.delete();
+						return;
 					});
 				});
 			});
 		});
 	}
 
-	replaceCards(player, chosen, cardsToChose) {
+	replaceCards(player, chosen, cardsToChoose) {
 		if(player.c1dead) {
-			player.card2 = chosen[0];
+			player.card2 = cardsToChoose[chosen[0]];
 		}else if(player.c2dead) {
-			player.card1 = chosen[0];
+			player.card1 = cardsToChoose[chosen[0]];
 		}else {
-			player.card1 = chosen[0];
-			player.card2 = chosen[1];
+			player.card1 = cardsToChoose[chosen[0]];
+			player.card2 = cardsToChoose[chosen[1]];
 		}
 		player.message.delete();
 		player.user.send(this.createPlayerEmbed(player));
@@ -473,13 +486,15 @@ class ComplotsGame {
 				}
 				player.message.delete();
 				player.message.channel.send(game.createPlayerEmbed(player)).then( newdm => player.message = newdm);
-				let playerToRemove = game.players.find(p => {p.user.id === player.user.id}); // Find the player to remove
+
+				let playerToRemove = game.players.find(p => p.user.id === player.user.id); // Find the player to remove
 				let indPlayerToRemove = game.players.indexOf(playerToRemove); // Get his index in the array
-				if(indPlayerToRemove !== -1) game.players.splice(indPlayerToRemove, 1); // Removes it frm the array
+				if(indPlayerToRemove !== -1) game.players.splice(indPlayerToRemove, 1); // Removes it from the array
 				resolve(deadCard);
 			}else {
 				player.user.send(`Réagis à ce message pour décider quelle carte tu veux dévoiler : \n:point_left: : ${player.card1}\n:point_right: : ${player.card2}`).then(dm => {
 					let filter = (r,u) => !u.bot;
+					// 👈👉
 					dm.react('👈');
 					dm.react('👉');
 					let collector = dm.createReactionCollector(filter, {time: 15000});
@@ -488,12 +503,12 @@ class ComplotsGame {
 						if(r.emoji.name === '👈') {
 							player.c1dead = true;
 							deadCard = player.card1;
-						}else if(r.emoji.name === '👉') { // 👉
+						}else if(r.emoji.name === '👉') {
 							player.c2dead = true;
 							deadCard = player.card2;
 						}
 						player.message.delete();
-						player.message.channel.send(game.createPlayerEmbed(player)).then( newdm => player.message = newdm);
+						player.message.channel.send(game.createPlayerEmbed(player)).then(newdm => player.message = newdm);
 						resolve(deadCard);
 					});
 				});
@@ -503,7 +518,7 @@ class ComplotsGame {
 
 	changeCard(player, cardNb) { // Exchange a card from a player hand with deck (can pick the card he just put back in the deck)
 		this.deck.push(player['card' + cardNb])
-		this.deck = this.deck.shuffle(this.deck);
+		this.deck = Deck.shuffle(this.deck);
 		player['card' + cardNb] = this.deck.shift();
 		player.message.delete();
 		player.message.channel.send(this.createPlayerEmbed(player)).then(dm => {
@@ -515,9 +530,9 @@ class ComplotsGame {
 		let game = this;
 		return new Promise(function(resolve, reject) {
 			msg.react('⚔️');
-			let filter = null;
+			let filter;
 			if(targeted === null) {
-				filter = (r, u) => !u.bot && !u.id === game.currentPlayer.user.id;
+				filter = (r, u) => !u.bot && u.id !== game.currentPlayer.user.id;
 			}else {
 				filter = (r, u) => !u.bot && u.id === targeted.user.id;
 			}
@@ -603,9 +618,11 @@ class Player {
 		this.message = null;
 		this.user = user;
 		this.gold = 2;
+		//if(this.user.id === '184331142286147584') this.gold = 20; // TODO: remove
 		this.card1 = deck.shift();
 		this.card2 = deck.shift();
 		this.c1dead = false;
+		//if(this.user.id === '478632780079824896') this.c1dead = true; // TODO: Remove
 		this.c2dead = false;
 	}
 
@@ -627,10 +644,10 @@ class Deck {
 		cards.forEach(card => {
 			for(let i = 0; i < eachCardNb; ++i) deck.push(card);
 		});
-		return this.shuffle(deck);
+		return Deck.shuffle(deck);
 	}
 
-	shuffle(deck) {
+	static shuffle(deck) {
 		return deck.sort(() => Math.random() - 0.5);
 	}
 }
