@@ -25,7 +25,11 @@ class ComplotsGame {
 	// Start a new turn
 	playTurn() {
 		this.hasChosen = false;
-		this.currentPlayer = this.players[this.turn++%this.players.length]; // Get the current player
+		
+		do {
+			this.currentPlayer = this.players[this.turn++%this.players.length]; // Get the current player
+		} while (this.currentPlayer.dead); // Skip the dead players
+
 		if(this.currentPlayer.gold >= 10) {
 			this.hasChosen = true;
 			this.assas7();
@@ -108,12 +112,11 @@ class ComplotsGame {
 
 	aideEtr() { // Method called when someone react to use 'Aide etrangere'
 		this.channel.send(`${this.currentPlayer.user} veut prendre l'aide étrangère (contré par la Duchesse), pour contrer cette action, réagissez avec l'emote :crossed_swords:️️ dans les 10 secondes`).then(msg => {
-			this.waitCounter(msg).then((countered, counter) => { // Wait to see if anyone counters the action
-				console.log("COUNTER : " + counter);
-				if(countered) { // If the action is countered
-					msg.edit(`*${this.currentPlayer.user} veut prendre l'aide étrangère (contré par la Duchesse)*\n\n**${counter} contre l'action de ${this.currentPlayer.user} (s'affirme Duchesse**\nPour contrer cette action, réagissez avec :crossed_swords:️️ dans les 10 secondes`).then(msg => {
-						this.waitCounter(msg).then((countered2, counter2) => { // Ask again to see if anyone counters the counter
-							if(countered2) { // If the counter is countered
+			this.waitCounter(msg).then(counter => { // Wait to see if anyone counters the action
+				if(counter !== undefined) { // If the action is countered
+					msg.edit(`*${this.currentPlayer.user} veut prendre l'aide étrangère (contré par la Duchesse)*\n\n**${counter} contre l'action de ${this.currentPlayer.user} (s'affirme Duchesse)**\nPour contrer cette action, réagissez avec :crossed_swords:️️ dans les 10 secondes`).then(msg => {
+						this.waitCounter(msg, null, true).then(counter2 => { // Ask again to see if anyone counters the counter
+							if(counter2 !== undefined) { // If the counter is countered
 								msg.edit(`*${this.currentPlayer.user} veut prendre l'aide étrangère (contré par la Duchesse)*\n*${counter} contre l'action de ${this.currentPlayer.user}*\n\n${counter2} pense que ${counter} n'est pas Duchesse`);
 								setTimeout(() => { // Timeout for suspens
 									let counterPlayer, counterPlayer2;
@@ -125,7 +128,7 @@ class ComplotsGame {
 										let cardDuchesse = counterPlayer.card1 === 'Duchesse' ? 1 : 2;
 										this.changeCard(counterPlayer, cardDuchesse);
 										msg.edit(`*${this.currentPlayer.user} veut prendre l'aide étrangère (contré par la Duchesse)*\n*${counter} contre l'action de ${this.currentPlayer.user}*\n\n${counter2} pense que ${counter} n'est pas Duchesse\n\n**${counter} était Duchesse, ${counter2} doit donc révéler une de ses cartes**`);
-										this.revealCard(msg, counterPlayer2).then(deadCard => {
+										this.revealCard(counterPlayer2).then(deadCard => {
 											msg.edit(`*${this.currentPlayer.user} veut prendre l'aide étrangère (contré par la Duchesse)*\n*${counter} contre l'action de ${this.currentPlayer.user}*\n\n${counter} était bel et bien Duchesse\n\n**${counterPlayer2.user} révèle un(e) _${deadCard}_**`);
 											setTimeout(() => {
 												this.lastAction = `*${counterPlayer.user} a conté l'aide étrangère de ${this.currentPlayer.user}, et ${counterPlayer2.user} a révélé un(e) ${deadCard}*`;
@@ -135,19 +138,25 @@ class ComplotsGame {
 										});
 									}else { // The counter hasn't a 'Duchesse' in his hand
 										msg.edit(`*${this.currentPlayer.user} veut prendre l'aide étrangère (contré par la Duchesse)*\n*${counter} contre l'action de ${this.currentPlayer.user}*\n\n${counter2} pense que ${counter} n'est pas Duchesse\n\n**${counter} n'est pas Duchesse et doit révéler une de ses cartes**`);
-										this.revealCard(msg, counterPlayer).then(deadCard => {
+										this.revealCard(counterPlayer).then(deadCard => {
 											msg.edit(`*${this.currentPlayer.user} veut prendre l'aide étrangère (contré par la Duchesse)*\n*${counter} contre l'action de ${this.currentPlayer.user}*\n\n${counter2} pense que ${counter} n'est pas Duchesse\n\n**${counterPlayer.user} n'était pas Duchesse et révèle un(e) _${deadCard}_**`);
 											setTimeout(() => {
 												msg.delete();
-												this.lastAction = `*${counter} perd une vie à cause du contre de ${counter2} et ${this.currentPlayer} bénéficie de l'aide étrangère*`;
+												this.lastAction = `*${counter} perd une vie à cause du contre de ${counter2} et ${this.currentPlayer.user} bénéficie de l'aide étrangère*`;
 												this.currentPlayer.gold += 2; // Gives 2 gold to the current player
 												this.currentPlayer.message.edit(this.createPlayerEmbed(this.currentPlayer));
 												this.playTurn();
+												return;
 											}, 5000);
 										});
 									}
 								}, 3000);
-							} // Else nothing happen because the first action has been countered
+							}else { // Else nothing happen because the first action has been countered
+								msg.delete();
+								this.lastAction = `*${this.currentPlayer.user} se fait contrer son aide étrangère par ${counter}*`;
+								this.playTurn();
+								return;
+							}
 						});
 					});
 				}else { // Not countered so the player takes 2 gold
@@ -157,6 +166,7 @@ class ComplotsGame {
 					// Updates the principal message
 					this.lastAction = `*${this.currentPlayer.user} bénéficie de l'aide étrangère et prend 2 pièces d'or*`;
 					this.playTurn();
+					return;
 				}
 			});
 		});
@@ -186,8 +196,8 @@ class ComplotsGame {
 
 	duchesse() {
 		this.channel.send(`${this.currentPlayer.user} veut faire l'action de la duchesse et prendre 3 pièces d'or.\nPour contrer cette action, régir avec :crossed_swords:️️ dans les 10 secondes.`).then(msg => {
-			this.waitCounter(msg).then((countered, counter) => {
-				if(counter) { // A player has countered the action
+			this.waitCounter(msg).then(counter => {
+				if(counter !== undefined) { // A player has countered the action
 					let counterPlayer;
 					this.players.forEach(player => {if(player.user.id === counter.id) counterPlayer = player});
 					if(this.currentPlayer.card1 === 'Duchesse' && !this.currentPlayer.c1dead || this.currentPlayer.card2 === 'Duchesse' && !this.currentPlayer.c2dead) { // The current player has a Duchesse
@@ -235,11 +245,11 @@ class ComplotsGame {
 					return; // Safe return to avoid any unpurposed code execution
 				}else { // The player has selected a target
 					msg.edit(`*${this.currentPlayer.user} veut effectuer l'action de l'assassin, iel doit mentioner la personne visée.*\n\n${target.user} est la cible de l'assassinat, il est possible de le contrer avec une Comptesse. Pour t'affirmer Comptesse, réagit avec :crossed_swords:️️ dans les 10 secondes.`);
-					this.waitCounter(msg).then((countered, counter) => { // Edit the message and wait for the target to counter or not
-						if(countered) { // If the target has countered the action
+					this.waitCounter(msg).then(counter => { // Edit the message and wait for the target to counter or not
+						if(counter !== undefined) { // If the target has countered the action
 							msg.edit(`*${this.currentPlayer.user} veut effectuer l'action de l'assassin, iel doit mentioner la personne visée.*\n\n**${target.user} contre l'assassinat en s'affirmant Comptesse, si quelqu'un pense que ce n'est pas le cas, réagissez à ce message avec :crossed_swords:️️ dans les 10 secondes.**`);
-							this.waitCounter(msg).then((countered2, counter2) => {
-								if(countered2) { // someone countered the counter and thinks the first counter is not a Comptesse
+							this.waitCounter(msg).then(counter2 => {
+								if(counter2 !== undefined) { // someone countered the counter and thinks the first counter is not a Comptesse
 									let counterPlayer, counterPlayer2;
 									this.players.forEach(player => { // Find the player of the counter to know the cards
 										if     (player.user.id === counter.id ) counterPlayer  = player;
@@ -255,7 +265,7 @@ class ComplotsGame {
 										});
 									}else { // The first counter was lying and doesn't have a Comptesse
 										// He loses 2 cards one because of the murder and one because of the failed counter
-										this.revealCard(msg, counterPlayer, true).then(d => {
+										this.revealCard(counterPlayer, true).then(d => {
 											msg.delete();
 											this.lastAction = `${counterPlayer.user} perd ses 2 cartes à cause de l'assassinat et du contre raté.`;
 											this.playTurn();
@@ -294,8 +304,8 @@ class ComplotsGame {
 					return;
 				}else {
 					msg.edit(`${this.currentPlayer.user} veut voler 2 pièces à ${target.user}, si vous pensez que ${this.currentPlayer.user} n'est pas capitaine, réagissez à ce message avec :crossed_swords:️️ dans les 10 secondes`).then(() => {
-						this.waitCounter(msg).then((countered, counter) => {
-							if(countered) { // Someone countered the capitaine
+						this.waitCounter(msg).then(counter => {
+							if(counter !== undefined) { // Someone countered the capitaine
 								if(!this.currentPlayer.c1dead && this.currentPlayer.card1 === 'Capitaine' || !this.currentPlayer.c2dead && this.currentPlayer.card2 === 'Capitaine') { // If the player wasn't lying
 									this.revealCard(counter).then(deadCard => {
 										this.lastAction = `${counter.user} pensait que ${this.currentPlayer.user} n'était pas Capitaine mais iel ne mentait pas. `;
@@ -311,11 +321,11 @@ class ComplotsGame {
 								}
 							}
 							msg.edit(`*${this.currentPlayer.user} veut voler 2 pièces à ${target.user}*\n${target.user} peut contrer l'action en s'affirmant Capitaine, pour faire cela, réagis avec :crossed_swords: dans les 10 secondes`).then(edited => {
-								this.waitCounter(edited, target).then((counteredSteal, counterSteal) => {
-									if(counteredSteal) {
+								this.waitCounter(edited, target).then(counterSteal => {
+									if(counterSteal !== undefined) {
 										msg.edit(`*${this.currentPlayer.user} veut voler 2 pièces à ${target.user}*\n${target.user} se dit Capitaine et contre le vol. Si vous pensez que ${target.user} n'est pas capitaine, réagissez avec :crossed_swords: dans les 10 secondes.`).then(reEdited => {
-											this.waitCounter(reEdited).then((counteredStolen, counterStolen) => {
-												if(counteredStolen) {
+											this.waitCounter(reEdited).then(counterStolen => {
+												if(counterStolen !== undefined) {
 													if(!target.c1dead && target.card1 === 'Capitaine' || !target.c2dead && target.card2 === 'Capitaine') { // The target is a Capitaine and wasn't lying on the counter
 														msg.edit(`*${this.currentPlayer.user} veut voler 2 pièces à ${target.user}\n${target.user} se dit Capitaine et contre le vol.*\n${counterStolen.user} pensait que ${target.user} n'était pas Capitaine, mais iel ne mentait pas. ${counterStolen.user} choisit une carte à révéler.`);
 														this.revealCard(counterStolen).then(deadCard => {
@@ -371,8 +381,8 @@ class ComplotsGame {
 	ambassadeur() {
 		this.lastAction = `**`;
 		this.channel.send(`${this.currentPlayer.user} veut effectuer l'action de l'ambassadeur, pour contrer ceci, réagir avec :crossed_swords: dans les 10 secondes`).then(msg => {
-			this.waitCounter(msg).then((countered, counter) => {
-				if(counter) {
+			this.waitCounter(msg).then(counter => {
+				if(counter !== undefined) {
 					if(!this.currentPlayer.c1dead && this.currentPlayer.card1 === 'Ambassadeur' || !this.currentPlayer.c2dead && this.currentPlayer.card2 === 'Ambassadeur') { // Not lying
 						msg.edit(`*${this.currentPlayer.user} veut effectuer l'action de l'ambassadeur*\n${counter.user} contre l'action mais ${this.currentPlayer.user} ne mentait pas.\n${counter.user} choisit une carte à révéler.`);
 						this.revealCard(this.currentPlayer).then(deadCard => {
@@ -487,9 +497,9 @@ class ComplotsGame {
 				player.message.delete();
 				player.message.channel.send(game.createPlayerEmbed(player)).then( newdm => player.message = newdm);
 
-				let playerToRemove = game.players.find(p => p.user.id === player.user.id); // Find the player to remove
-				let indPlayerToRemove = game.players.indexOf(playerToRemove); // Get his index in the array
-				if(indPlayerToRemove !== -1) game.players.splice(indPlayerToRemove, 1); // Removes it from the array
+				player.dead = true;
+				let countAlive = this.players.filter(p => !p.dead).length;
+				if(countAlive === 1) game.finishGame();
 				resolve(deadCard);
 			}else {
 				player.user.send(`Réagis à ce message pour décider quelle carte tu veux dévoiler : \n:point_left: : ${player.card1}\n:point_right: : ${player.card2}`).then(dm => {
@@ -526,27 +536,30 @@ class ComplotsGame {
 		});
 	}
 
-	waitCounter(msg, targeted = null) { // Wait for a reaction on a message to execute the action linked to a counter
+	waitCounter(msg, targeted = null, currentPlayerCanCounter = false) { // Wait for a reaction on a message to execute the action linked to a counter
 		let game = this;
 		return new Promise(function(resolve, reject) {
-			msg.react('⚔️');
-			let filter;
-			if(targeted === null) {
-				filter = (r, u) => !u.bot && u.id !== game.currentPlayer.user.id;
-			}else {
-				filter = (r, u) => !u.bot && u.id === targeted.user.id;
-			}
-			let collector = msg.createReactionCollector(filter, {time:10000});
-			collector.on('collect', (r, u) => {
-				msg.reactions.removeAll();
-				collector.stop('countered');
-				resolve(true, u);
-			});
-			collector.on('end', (coll, reason) => {
-				msg.reactions.removeAll();
-				if(reason !== 'countered') {
-					resolve(false, null);
+			msg.react('⚔️').then(reacted => {
+				let filter;
+				if(targeted === null && !currentPlayerCanCounter) {
+					filter = (r, u) => !u.bot && u.id !== game.currentPlayer.user.id;
+				}else if(targeted === null && currentPlayerCanCounter) {
+					filter = (r, u) => !u.bot;
+				}else {
+					filter = (r, u) => !u.bot && u.id === targeted.user.id;
 				}
+				let collector = msg.createReactionCollector(filter, {time:10000});
+				collector.on('collect', (r, u) => {
+					msg.reactions.removeAll();
+					collector.stop('countered');
+					resolve(u);
+				});
+				collector.on('end', (coll, reason) => {
+					msg.reactions.removeAll();
+					if(reason !== 'countered') {
+						resolve();
+					}
+				});
 			});
 		});
 	}
@@ -611,6 +624,10 @@ class ComplotsGame {
 		.setImage('attachment://'+attached)
 		.addField('Argent', player.gold);
 	}
+
+	finishGame() {
+		// TODO: End condition
+	}
 }
 
 class Player {
@@ -624,6 +641,7 @@ class Player {
 		this.c1dead = false;
 		//if(this.user.id === '478632780079824896') this.c1dead = true; // TODO: Remove
 		this.c2dead = false;
+		this.dead = false;
 	}
 
 	static createPlayers(users, deck) {
