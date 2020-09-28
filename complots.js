@@ -25,7 +25,7 @@ class ComplotsGame {
 	// Start a new turn
 	playTurn() {
 		this.hasChosen = false;
-		
+
 		do {
 			this.currentPlayer = this.players[this.turn++%this.players.length]; // Get the current player
 		} while (this.currentPlayer.dead); // Skip the dead players
@@ -245,10 +245,10 @@ class ComplotsGame {
 					return; // Safe return to avoid any unpurposed code execution
 				}else { // The player has selected a target
 					msg.edit(`*${this.currentPlayer.user} veut effectuer l'action de l'assassin, iel doit mentioner la personne visée.*\n\n${target.user} est la cible de l'assassinat, il est possible de le contrer avec une Comptesse. Pour t'affirmer Comptesse, réagit avec :crossed_swords:️️ dans les 10 secondes.`);
-					this.waitCounter(msg).then(counter => { // Edit the message and wait for the target to counter or not
+					this.waitCounter(msg, target).then(counter => { // Edit the message and wait for the target to counter or not
 						if(counter !== undefined) { // If the target has countered the action
 							msg.edit(`*${this.currentPlayer.user} veut effectuer l'action de l'assassin, iel doit mentioner la personne visée.*\n\n**${target.user} contre l'assassinat en s'affirmant Comptesse, si quelqu'un pense que ce n'est pas le cas, réagissez à ce message avec :crossed_swords:️️ dans les 10 secondes.**`);
-							this.waitCounter(msg).then(counter2 => {
+							this.waitCounter(msg, null, true).then(counter2 => {
 								if(counter2 !== undefined) { // someone countered the counter and thinks the first counter is not a Comptesse
 									let counterPlayer, counterPlayer2;
 									this.players.forEach(player => { // Find the player of the counter to know the cards
