@@ -202,7 +202,7 @@ class ComplotsGame {
 						setTimeout(() => {
 							msg.edit(`${this.currentPlayer.user} se fait contrer par ${counter} mais il avait bien une Duchesse\n${counter} perd une vie.`);
 							this.revealCard(counterPlayer).then(deadCard => {
-								this.lastAction = `${this.currentPlayer.user} prend 3 pièces d'or et ${counter} perd un(e) ${deadCard} car ${this.currentPlayer.user} avait bien une Duchesse`;
+								this.lastAction = `*${this.currentPlayer.user} prend 3 pièces d'or et ${counter} perd un(e) ${deadCard} car ${this.currentPlayer.user} avait bien une Duchesse*`;
 								this.currentPlayer.gold += 3;
 								msg.delete();
 								this.playTurn();
@@ -214,7 +214,7 @@ class ComplotsGame {
 						setTimeout(() => {
 							msg.edit(`${this.currentPlayer.user} se fait contrer par ${counter} et n'avait pas de Duchesse\nIl perd donc une vie`);
 							this.revealCard(this.currentPlayer).then(deadCard => {
-								this.lastAction = `${this.currentPlayer.user} s'est fait contré par ${counterPlayer} et a perdu un(e) ${deadCard}`;
+								this.lastAction = `*${this.currentPlayer.user} s'est fait contré par ${counterPlayer} et a perdu un(e) ${deadCard}*`;
 								msg.delete();
 								this.playTurn();
 							});
@@ -264,22 +264,22 @@ class ComplotsGame {
 										// He loses 2 cards one because of the murder and one because of the failed counter
 										this.revealCard(counterPlayer, true).then(d => {
 											msg.delete();
-											this.lastAction = `${counterPlayer.user} perd ses 2 cartes à cause de l'assassinat et du contre raté.`;
+											this.lastAction = `*${counterPlayer.user} perd ses 2 cartes à cause de l'assassinat et du contre raté.*`;
 											this.playTurn();
 											return; // Safe return
 										});
 									}
 								}else { // Nobody counters the counter so nothing happens except that the first player loses 3 gold.
-									this.lastAction = `**${this.currentPlayer.user} voulait assassiner ${target.user} mais ${target.user} s'est affirmé(e) Comptesse.`;
+									this.lastAction = `*${this.currentPlayer.user} voulait assassiner ${target.user} mais ${target.user} s'est affirmé(e) Comptesse.*`;
 									this.playTurn();
 									return; // Safe return
 								}
 							});
 						}else { // The target hasn't countered and lose a card
-							msg.edit(`*${this.currentPlayer.user} veut effectuer l'action de l'assassin, iel doit mentioner la personne visée.*\n\n**${target.user} n'a pas contré l'assassinat et va donc perdre une carte.**`);
+							msg.edit(`*${this.currentPlayer.user} veut effectuer l'action de l'assassin, iel doit mentioner la personne visée.*\n\n${target.user} n'a pas contré l'assassinat et va donc perdre une carte.`);
 							this.revealCard(target).then(deadCard => {
 								msg.delete();
-								this.lastAction = `${this.currentPlayer.user} a tué ${target.user} en tant qu'Assassin, iel révèle un(e) ${deadCard}`;
+								this.lastAction = `*${this.currentPlayer.user} a tué ${target.user} en tant qu'Assassin, iel révèle un(e) ${deadCard}*`;
 								this.playTurn();
 								return; // Safe return to avoid any unpurposed code execution
 							});
@@ -291,11 +291,11 @@ class ComplotsGame {
 	}
 
 	capitaine() {
-		this.lastAction = `**`;
+		this.lastAction = `*`;
 		this.channel.send(`${this.currentPlayer.user} veut effectuer l'action du capitaine, iel doit choisir une cible en mentionnant une personne.`).then(msg => {
 			this.waitTarget(msg).then(target => {
 				if(target === null) {
-					this.lastAction = `${this.currentPlayer.user} voulait faire l'action du capitaine mais n'a pas choisi de cible.`;
+					this.lastAction += `${this.currentPlayer.user} voulait faire l'action du capitaine mais n'a pas choisi de cible.`;
 					msg.delete();
 					this.playTurn();
 					return;
@@ -400,7 +400,7 @@ class ComplotsGame {
 						setTimeout(() => {
 							msg.edit(`*${this.currentPlayer.user} veut effectuer l'action de l'ambassadeur\n${counter} pense que ${this.currentPlayer.user} n'est pas Ambassadeur.*\n${this.currentPlayer.user} n'était pas Ambaassadeur et perd donc une vie.`);
 							this.revealCard(this.currentPlayer).then(deadCard => {
-								this.lastAction = `**${this.currentPlayer.user} voulait affectuer l'action de l'Ambassadeur mais s'est fait contrer par ${counter.user} et révèle un(e) ${deadCard}**`;
+								this.lastAction = `*${this.currentPlayer.user} voulait affectuer l'action de l'Ambassadeur mais s'est fait contrer par ${counter.user} et révèle un(e) ${deadCard}*`;
 								msg.delete();
 								this.playTurn();
 							});
