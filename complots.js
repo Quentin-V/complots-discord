@@ -13,6 +13,7 @@ class ComplotsGame {
 		this.lastAction = '	';
 		this.currentPlayer = null;
 		this.hasChosen = false;
+		this.finished = false;
 		this.startGame();
 	}
 
@@ -24,6 +25,8 @@ class ComplotsGame {
 	}
 	// Start a new turn
 	playTurn() {
+		if(this.finished) return;
+
 		this.hasChosen = false;
 
 		do {
@@ -494,12 +497,16 @@ class ComplotsGame {
 					player.c2dead = true;
 					let deadCard = null;
 				}
-				player.message.delete();
-				player.message.channel.send(game.createPlayerEmbed(player)).then( newdm => player.message = newdm);
 
 				player.dead = true;
-				let countAlive = this.players.filter(p => !p.dead).length;
-				if(countAlive === 1) game.finishGame();
+				let countAlive = game.players.filter(p => !p.dead).length;
+				if(countAlive === 1) {
+					game.finished = true;
+					game.finishGame();
+				}else {
+					player.message.delete();
+					player.message.channel.send(game.createPlayerEmbed(player)).then( newdm => player.message = newdm);
+				}
 				resolve(deadCard);
 			}else {
 				player.user.send(`Réagis à ce message pour décider quelle carte tu veux dévoiler : \n:point_left: : ${player.card1}\n:point_right: : ${player.card2}`).then(dm => {
@@ -626,6 +633,20 @@ class ComplotsGame {
 	}
 
 	finishGame() {
+		let winner = this.players.filter(p => !p.dead)[0];
+		winner.c1dead = true;
+		winner.c2dead = true;
+		this.players.forEach(p => p.message.delete());
+		this.message.edit(`***Partie terminée, c'est ${winner.user} qui a gagné.***\n\n` + this.statusToString() + `\n\nPour supprimer ce message, réagir avec :negative_squared_cross_mark:`); //❎
+		this.message.reactions.removeAll().then(m => {
+			m.react('❎');
+		});
+		let filter = (r, u) => !u.bot && r.emoji.name === '❎';
+		let collector = this.message.createReactionCollector(filter);
+		collector.on('collect', (r,u) => {
+			this.message.delete();
+			collector.stop('stopped');
+		});
 		// TODO: End condition
 	}
 }
@@ -635,11 +656,9 @@ class Player {
 		this.message = null;
 		this.user = user;
 		this.gold = 2;
-		//if(this.user.id === '184331142286147584') this.gold = 20; // TODO: remove
 		this.card1 = deck.shift();
 		this.card2 = deck.shift();
 		this.c1dead = false;
-		//if(this.user.id === '478632780079824896') this.c1dead = true; // TODO: Remove
 		this.c2dead = false;
 		this.dead = false;
 	}
