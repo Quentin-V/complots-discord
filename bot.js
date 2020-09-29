@@ -30,6 +30,10 @@ bot.on('message', message => {
 		console.log(message.mentions.users.array());
 		console.log(message.mentions.users.array()[0]);
 	}
+	if(message.content === 'rules') {
+		if(message.channel.type === 'text') message.delete();
+		message.author.send(complots.rulesEmbed);
+	}
 });
 
 
