@@ -303,33 +303,40 @@ class ComplotsGame {
 					msg.edit(`${this.currentPlayer.user} veut voler 2 pièces à ${target.user}, si vous pensez que ${this.currentPlayer.user} n'est pas capitaine, réagissez à ce message avec :crossed_swords:️️ dans les 10 secondes`).then(() => {
 						this.waitCounter(msg).then(counter => {
 							if(counter !== undefined) { // Someone countered the capitaine
+								let counterPlayer = this.players.find(p => p.user.id === counter.id);
+								msg.edit(`*${this.currentPlayer.user} veut voler 2 pièces à ${target.user}.*\n${counter} pense que ${this.currentPlayer.user} n'est pas Capitaine.`);
 								if(!this.currentPlayer.c1dead && this.currentPlayer.card1 === 'Capitaine' || !this.currentPlayer.c2dead && this.currentPlayer.card2 === 'Capitaine') { // If the player wasn't lying
-									this.revealCard(counter).then(deadCard => {
-										this.lastAction = `${counter.user} pensait que ${this.currentPlayer.user} n'était pas Capitaine mais iel ne mentait pas. `;
-									});
+									setTimeout(() => { // Timeout for suspens
+										msg.edit(`*${this.currentPlayer.user} veut voler 2 pièces à ${target.user}.\n${counter} pense que ${this.currentPlayer.user} n'est pas Capitaine.*\n${this.currentPlayer.user} ne mentait pas, ${counter} perd une vie.`);
+										this.revealCard(counterPlayer).then(deadCard => {
+											this.lastAction += `${counter.user} pensait que ${this.currentPlayer.user} n'était pas Capitaine mais iel ne mentait pas. `;
+										});
+									}, 3000);
 								}else { // If the player was actually lying
-									msg.edit(`*${this.currentPlayer.user} veut voler 2 pièces à ${target.user}*\n${counter.user} contre l'action de ${this.currentPlayer.user} qui n'est pas Capitaine, ${this.currentPlayer.user} choisi une carte à révéler.`);
-									this.revealCard(counter).then(deadCard => {
-										this.lastAction = `**${counter.user} contre l'action de ${this.currentPlayer.user} qui n'était pas Capitaine et révèle un(e) ${deadCard}.**`;
-										msg.delete();
-										this.playTurn();
-										return;
-									});
+									setTimeout(() => {
+										msg.edit(`*${this.currentPlayer.user} veut voler 2 pièces à ${target.user}.\n${counter} pense que ${this.currentPlayer.user} n'est pas Capitaine.*\n${this.currentPlayer.user} n'était pas capitaine et perd donc une vie.`);
+										this.revealCard(counterPlayer).then(deadCard => {
+											this.lastAction += `${counter} contre le vol de ${this.currentPlayer.user} qui n'était pas Capitaine et révèle un(e) ${deadCard}.**`;
+											msg.delete();
+											this.playTurn();
+										});
+									}, 3000);
 								}
 							}
 							msg.edit(`*${this.currentPlayer.user} veut voler 2 pièces à ${target.user}*\n${target.user} peut contrer l'action en s'affirmant Capitaine ou Ambassadeur, pour faire cela, réagis avec :crossed_swords: dans les 10 secondes`).then(edited => {
 								this.waitCounter(edited, target).then(counterSteal => {
 									if(counterSteal !== undefined) {
+										let counterStealPlayer = this.players.find(p => p.user.id === counterSteal.id);
 										msg.edit(`*${this.currentPlayer.user} veut voler 2 pièces à ${target.user}*\n${target.user} se dit Capitaine et contre le vol. Si vous pensez que ${target.user} n'est pas capitaine, réagissez avec :crossed_swords: dans les 10 secondes.`).then(reEdited => {
-											this.waitCounter(reEdited).then(counterStolen => {
+											this.waitCounter(reEdited, null, true, counterStealPlayer).then(counterStolen => {
 												if(counterStolen !== undefined) {
+													let counterStolenPlayer = this.players.find(p => p.user.id === counterStolen.id);
 													if(!target.c1dead && (target.card1 === 'Capitaine' || target.card1 === 'Ambassadeur') || !target.c2dead && (target.card2 === 'Capitaine' || target.card2 === 'Ambassadeur')) { // The target is a Capitaine and wasn't lying on the counter
 														msg.edit(`*${this.currentPlayer.user} veut voler 2 pièces à ${target.user}\n${target.user} se dit Capitaine et contre le vol.*\n${counterStolen.user} pensait que ${target.user} n'était pas Capitaine, mais iel ne mentait pas. ${counterStolen.user} choisit une carte à révéler.`);
-														this.revealCard(counterStolen).then(deadCard => {
+														this.revealCard(counterStolenPlayer).then(deadCard => {
 															this.lastAction += `${target.user} a contré le vol en tant que Capitaine et ${counterStolen.user} perd un(e) ${deadCard} car iel ne l'a pas cru.**`;
 															msg.delete();
 															this.playTurn();
-															return;
 														});
 													}else { // The target wasn't a capitaine and was lying
 														msg.edit(`*${this.currentPlayer.user} veut voler 2 pièces à ${target.user}\n${target.user} se dit Capitaine et contre le vol.*\n${target.user} n'était pas Capiteine et doit maintenant choisir une carte à révéler.`);
@@ -351,7 +358,7 @@ class ComplotsGame {
 										});
 									}else {
 										this.capSteal(this.currentPlayer, target); // Steal maximum 2 gold from the target
-										this.lastAction += `${this.currentPlayer} a volé 2 pièces à ${target}.**`;
+										this.lastAction += `${this.currentPlayer.user} a volé 2 pièces à ${target.user}.**`;
 										msg.delete();
 										this.playTurn();
 										return;
@@ -376,19 +383,22 @@ class ComplotsGame {
 	}
 
 	ambassadeur() {
-		this.lastAction = `**`;
+		this.lastAction = `*`;
 		this.channel.send(`${this.currentPlayer.user} veut effectuer l'action de l'ambassadeur, pour contrer ceci, réagir avec :crossed_swords: dans les 10 secondes`).then(msg => {
 			this.waitCounter(msg).then(counter => {
 				if(counter !== undefined) {
+					let counterPlayer = this.players.find(p => p.user.id === counter.id);
 					msg.edit(`*${this.currentPlayer.user} veut effectuer l'action de l'ambassadeur*\n${counter} pense que ${this.currentPlayer.user} n'est pas Ambassadeur.`);
 					if(!this.currentPlayer.c1dead && this.currentPlayer.card1 === 'Ambassadeur' || !this.currentPlayer.c2dead && this.currentPlayer.card2 === 'Ambassadeur') { // Not lying
-						msg.edit(`*${this.currentPlayer.user} veut effectuer l'action de l'ambassadeur*\n${counter} contre l'action mais ${this.currentPlayer.user} ne mentait pas.\n${counter.user} choisit une carte à révéler.`);
-						this.revealCard(this.ayer).then(deadCard => {
-							this.lastAction += `${counter.user} rate son contre sur ${this.currentPlayer.user} et perd un(e) ${deadCard}.`;
-						});
+						setTimeout(() => {
+							msg.edit(`*${this.currentPlayer.user} veut effectuer l'action de l'ambassadeur\n${counter} pense que ${this.currentPlayer.user} n'est pas Ambassadeur.*\n${this.currentPlayer.user} ne mentait pas donc ${counter} perd une vie.`);
+							this.revealCard(counterPlayer).then(deadCard => {
+								this.lastAction += `${counter} rate son contre sur ${this.currentPlayer.user} et perd un(e) ${deadCard}.`;
+							});
+						}, 3000);
 					}else { // Lying
 						setTimeout(() => {
-							msg.edit(`*${this.currentPlayer.user} veut effectuer l'action de l'ambassadeur*\n${counter} contre l'action car ${this.currentPlayer.user} mentait.`);
+							msg.edit(`*${this.currentPlayer.user} veut effectuer l'action de l'ambassadeur\n${counter} pense que ${this.currentPlayer.user} n'est pas Ambassadeur.*\n${this.currentPlayer.user} n'était pas Ambaassadeur et perd donc une vie.`);
 							this.revealCard(this.currentPlayer).then(deadCard => {
 								this.lastAction = `**${this.currentPlayer.user} voulait affectuer l'action de l'Ambassadeur mais s'est fait contrer par ${counter.user} et révèle un(e) ${deadCard}**`;
 								msg.delete();
@@ -448,7 +458,7 @@ class ComplotsGame {
 								this.deck = this.deck.concat(cardsToChoose);
 								this.deck = Deck.shuffle(this.deck);
 							}
-							this.lastAction += `${this.currentPlayer.user} a fait l'action de l'ambassadeur.**`;
+							this.lastAction += `${this.currentPlayer.user} a fait l'action de l'ambassadeur.*`;
 							this.playTurn();
 							dm.delete();
 							msg.delete();
