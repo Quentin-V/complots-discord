@@ -416,11 +416,19 @@ class ComplotsGame {
 					cardsStr += `${index} : ${cardsToChoose[index++]}\n`;
 				});
 
-				this.currentPlayer.user.send(`Tu pioches 2 cartes et doit en choisir ${nbKeep} à garder parmi les suivantes :\n${cardsStr}`).then(dm => {
+				this.currentPlayer.user.send(`Tu pioches 2 cartes et doit en choisir ${nbKeep} à garder parmi les suivantes (séparer les choix par un espace)  :\n${cardsStr}`).then(dm => {
 					let filter = m => {
+						let shouldReturn = false;
+						let count = 0;
 						m.content.split(' ').forEach(e => {
-							if(isNaN(parseInt(e, 10)) || parseInt(e, 10) >= index || m.author.bot) return false;
-						})
+							++count;
+							if(isNaN(parseInt(e, 10)) || parseInt(e, 10) >= index || m.author.bot) {
+								shouldReturn = true;
+								return;
+							}
+						});
+						if(shouldReturn) return false;
+						if(count !== nbKeep) return false;
 						return true;
 					}
 					let collector = dm.channel.createMessageCollector(filter, {time: 20000});
