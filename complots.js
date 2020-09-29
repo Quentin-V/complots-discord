@@ -323,13 +323,13 @@ class ComplotsGame {
 									});
 								}
 							}
-							msg.edit(`*${this.currentPlayer.user} veut voler 2 pièces à ${target.user}*\n${target.user} peut contrer l'action en s'affirmant Capitaine, pour faire cela, réagis avec :crossed_swords: dans les 10 secondes`).then(edited => {
+							msg.edit(`*${this.currentPlayer.user} veut voler 2 pièces à ${target.user}*\n${target.user} peut contrer l'action en s'affirmant Capitaine ou Ambassadeur, pour faire cela, réagis avec :crossed_swords: dans les 10 secondes`).then(edited => {
 								this.waitCounter(edited, target).then(counterSteal => {
 									if(counterSteal !== undefined) {
 										msg.edit(`*${this.currentPlayer.user} veut voler 2 pièces à ${target.user}*\n${target.user} se dit Capitaine et contre le vol. Si vous pensez que ${target.user} n'est pas capitaine, réagissez avec :crossed_swords: dans les 10 secondes.`).then(reEdited => {
 											this.waitCounter(reEdited).then(counterStolen => {
 												if(counterStolen !== undefined) {
-													if(!target.c1dead && target.card1 === 'Capitaine' || !target.c2dead && target.card2 === 'Capitaine') { // The target is a Capitaine and wasn't lying on the counter
+													if(!target.c1dead && (target.card1 === 'Capitaine' || target.card1 === 'Ambassadeur') || !target.c2dead && (target.card2 === 'Capitaine' || target.card2 === 'Ambassadeur')) { // The target is a Capitaine and wasn't lying on the counter
 														msg.edit(`*${this.currentPlayer.user} veut voler 2 pièces à ${target.user}\n${target.user} se dit Capitaine et contre le vol.*\n${counterStolen.user} pensait que ${target.user} n'était pas Capitaine, mais iel ne mentait pas. ${counterStolen.user} choisit une carte à révéler.`);
 														this.revealCard(counterStolen).then(deadCard => {
 															this.lastAction += `${target.user} a contré le vol en tant que Capitaine et ${counterStolen.user} perd un(e) ${deadCard} car iel ne l'a pas cru.**`;
@@ -697,6 +697,25 @@ class Deck {
 	}
 }
 
+let possibleActions = `Prendre le revenu : Fais gagner 1 gold, incontrable
+Demander l'aide étrangère : Contré par la Duchesse
+Assassiner quelqu'un pour 7 gold, incontrable
+Effectuer l'action d'un des personnages`;
+
+let characterActions = `Duchesse : Prend 3 gold
+Capitaine : Vole maximum 2 gold à un autre joueur, contré par le Capitaine et l'Ambassadeur
+Assassin : Assassine un joueur pour 3 gold, contré par la Comptesse
+Ambassadeur : Pioche 2 cartes et puis repose 2 cartes de son choix dans la pioche
+Comptesse : Contre l'action de l'Assassin`;
+
+const rulesEmbed = new MessageEmbed()
+	.setTitle(`Regles : `)
+	.setColor(`#ffa000`)
+	.addField(`Actions possibles`, possibleActions)
+	.addField(`Actions des personnages`, characterActions)
+	.attachFiles([`./resources/aide_de_jeu.jpg`])
+	.setImage(`attachment://aide_de_jeu.jpg`)
 exports.ComplotsGame = ComplotsGame;
 exports.Player = Player;
 exports.Deck = Deck;
+exports.rulesEmbed = rulesEmbed;

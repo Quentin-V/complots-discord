@@ -28,6 +28,10 @@ bot.on('message', message => {
 			});
 		});
 	}
+	if(message.content === 'rules') {
+		if(message.channel.type === 'text') message.delete();
+		message.author.send(complots.rulesEmbed);
+	}
 });
 
 
