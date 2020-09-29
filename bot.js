@@ -15,20 +15,18 @@ bot.on('message', message => {
 		if(!players.includes(message.author)) players.push(message.author);
 		game = new complots.ComplotsGame(players, bot, message.channel);
 	}
-	if(message.content.startsWith('dead')) {
-		game.players[0].c1dead = true;
-		game.players[0].message.delete();
-		game.players[0].message.channel.send(game.createPlayerEmbed(game.players[0])).then( newdm => game.players[0].message = newdm);
-	}
-	if(message.content.startsWith('gold')) {
-		game.players[0].gold = 9;
-		game.players[0].message.delete();
-		game.players[0].message.channel.send(game.createPlayerEmbed(game.players[0])).then( newdm => game.players[0].message = newdm);
-		message.delete();
-	}
-	if(message.content.startsWith('mention')) {
-		console.log(message.mentions.users.array());
-		console.log(message.mentions.users.array()[0]);
+
+	if(message.content.startsWith('cleardm')) {
+		message.author.createDM().then(dmc => {
+			dmc.messages.fetch(true).then(messages => {
+				let collBotMessages = messages.filter(mess => mess.author.id === bot.user.id);
+				let toDelete = collBotMessages.array().length;
+				let deleted = 0;
+				collBotMessages.forEach(m => {
+					m.delete().then(() => {console.log(`Deleted ${++deleted}/${toDelete} ${((deleted/toDelete) * 100).toFixed(2)}%`)});
+				})
+			});
+		});
 	}
 });
 
