@@ -9,7 +9,7 @@
   "author": "Quinta_",
   "license": "ISC",
   "dependencies": {
-    "discord.js": "^12.3.1"
+    "discord.js": "^13.6.0"
   },
   "repository": {
     "type": "git",
